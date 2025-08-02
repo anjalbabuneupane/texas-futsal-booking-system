@@ -300,31 +300,73 @@ function showAdminDashboard() {
 // Load student data
 async function loadStudentData() {
     try {
+        console.log('🔍 Loading student data for:', currentUser);
+        
         const studentBookings = db.getBookingsByStudent(currentUser.studentId);
         
         // Update statistics
-        document.getElementById('myTotalBookings').textContent = studentBookings.length;
+        const myTotalBookingsElement = document.getElementById('myTotalBookings');
+        if (myTotalBookingsElement) {
+            myTotalBookingsElement.textContent = studentBookings.length;
+        }
         
         const thisMonth = new Date().getMonth();
         const thisMonthBookings = studentBookings.filter(booking => {
             const bookingMonth = new Date(booking.date).getMonth();
             return bookingMonth === thisMonth;
         });
-        document.getElementById('myThisMonth').textContent = thisMonthBookings.length;
+        
+        const myThisMonthElement = document.getElementById('myThisMonth');
+        if (myThisMonthElement) {
+            myThisMonthElement.textContent = thisMonthBookings.length;
+        }
         
         const totalHours = studentBookings.length; // 1 hour per booking
-        document.getElementById('myHoursPlayed').textContent = totalHours;
+        const myHoursPlayedElement = document.getElementById('myHoursPlayed');
+        if (myHoursPlayedElement) {
+            myHoursPlayedElement.textContent = totalHours;
+        }
         
         // Load comprehensive booking data
         loadMyBookingsDashboard();
         
-        // Update student information display
-        document.getElementById('studentNameDisplay').textContent = currentUser.name;
-        document.getElementById('studentIdCard').textContent = currentUser.studentId;
-        document.getElementById('studentProgramCard').textContent = currentUser.program;
-        document.getElementById('studentNameHeader').textContent = currentUser.name;
+        // Update student information display with error checking
+        const studentNameDisplay = document.getElementById('studentNameDisplay');
+        const studentIdCard = document.getElementById('studentIdCard');
+        const studentProgramCard = document.getElementById('studentProgramCard');
+        const studentNameHeader = document.getElementById('studentNameHeader');
+        
+        if (studentNameDisplay) {
+            studentNameDisplay.textContent = currentUser.name || 'Unknown Student';
+            console.log('✅ Updated studentNameDisplay:', currentUser.name);
+        } else {
+            console.error('❌ studentNameDisplay element not found');
+        }
+        
+        if (studentIdCard) {
+            studentIdCard.textContent = currentUser.studentId || 'Unknown ID';
+            console.log('✅ Updated studentIdCard:', currentUser.studentId);
+        } else {
+            console.error('❌ studentIdCard element not found');
+        }
+        
+        if (studentProgramCard) {
+            studentProgramCard.textContent = currentUser.program || 'Unknown Program';
+            console.log('✅ Updated studentProgramCard:', currentUser.program);
+        } else {
+            console.error('❌ studentProgramCard element not found');
+        }
+        
+        if (studentNameHeader) {
+            studentNameHeader.textContent = currentUser.name || 'Unknown Student';
+            console.log('✅ Updated studentNameHeader:', currentUser.name);
+        } else {
+            console.error('❌ studentNameHeader element not found');
+        }
+        
+        console.log('✅ Student data loaded successfully');
     } catch (error) {
-        console.error('Error loading student data:', error);
+        console.error('❌ Error loading student data:', error);
         showNotification('Error loading student data', 'error');
     }
 }
@@ -1798,8 +1840,20 @@ function showBookingDatabase() {
 }
 
 function showStatisticsDashboard() {
-    document.getElementById('statisticsModal').style.display = 'block';
-    loadStatisticsData();
+    try {
+        const statisticsModal = document.getElementById('statisticsModal');
+        if (statisticsModal) {
+            statisticsModal.style.display = 'block';
+            loadStatisticsData();
+            console.log('✅ Statistics dashboard opened successfully');
+        } else {
+            console.error('❌ Statistics modal not found');
+            showNotification('Statistics dashboard not available', 'error');
+        }
+    } catch (error) {
+        console.error('❌ Error opening statistics dashboard:', error);
+        showNotification('Error opening statistics dashboard', 'error');
+    }
 }
 
 function showBookingManagement() {
@@ -2081,38 +2135,62 @@ function loadUpcomingBookings() {
 
 // Load statistics data
 function loadStatisticsData() {
-    const stats = db.getStatistics();
-    const students = db.getStudents();
-    const bookings = db.getBookings();
-    
-    // Update main statistics
-    document.getElementById('statsTotalStudents').textContent = stats.totalStudents;
-    document.getElementById('statsTotalBookings').textContent = stats.totalBookings;
-    document.getElementById('statsTodayBookings').textContent = stats.todayBookings;
-    
-    // Calculate detailed statistics
-    const activeStudents = Object.values(students).filter(s => s.status === 'active').length;
-    const bannedStudents = Object.values(students).filter(s => s.status === 'banned').length;
-    const confirmedBookings = bookings.filter(b => b.status === 'confirmed').length;
-    const cancelledBookings = bookings.filter(b => b.status === 'cancelled').length;
-    
-    // Update detailed stats
-    document.getElementById('statsActiveStudents').textContent = `${activeStudents} Active`;
-    document.getElementById('statsBannedStudents').textContent = `${bannedStudents} Banned`;
-    document.getElementById('statsConfirmedBookings').textContent = `${confirmedBookings} Confirmed`;
-    document.getElementById('statsCancelledBookings').textContent = `${cancelledBookings} Cancelled`;
-    
-    // Calculate usage percentage (based on average daily bookings)
-    const totalDays = Math.max(1, Math.floor((new Date() - new Date('2024-01-01')) / (1000 * 60 * 60 * 24)));
-    const avgDailyBookings = Math.round(stats.totalBookings / totalDays);
-    const usagePercentage = Math.min(100, Math.round((avgDailyBookings / 17) * 100)); // 17 slots per day
-    document.getElementById('statsUsagePercentage').textContent = `${usagePercentage}%`;
-    
-    // Load recent activity
-    loadRecentActivity();
-    
-    // Load booking status chart
-    loadBookingStatusChart(confirmedBookings, cancelledBookings);
+    try {
+        console.log('📊 Loading statistics data...');
+        
+        const stats = db.getStatistics();
+        const students = db.getStudents();
+        const bookings = db.getBookings();
+        
+        console.log('📊 Statistics:', stats);
+        console.log('👥 Students count:', Object.keys(students).length);
+        console.log('📅 Bookings count:', bookings.length);
+        
+        // Update main statistics with error checking
+        const statsTotalStudents = document.getElementById('statsTotalStudents');
+        const statsTotalBookings = document.getElementById('statsTotalBookings');
+        const statsTodayBookings = document.getElementById('statsTodayBookings');
+        
+        if (statsTotalStudents) statsTotalStudents.textContent = stats.totalStudents;
+        if (statsTotalBookings) statsTotalBookings.textContent = stats.totalBookings;
+        if (statsTodayBookings) statsTodayBookings.textContent = stats.todayBookings;
+        
+        // Calculate detailed statistics
+        const activeStudents = Object.values(students).filter(s => s.status === 'active').length;
+        const bannedStudents = Object.values(students).filter(s => s.status === 'banned').length;
+        const confirmedBookings = bookings.filter(b => b.status === 'confirmed').length;
+        const cancelledBookings = bookings.filter(b => b.status === 'cancelled').length;
+        
+        // Update detailed stats with error checking
+        const statsActiveStudents = document.getElementById('statsActiveStudents');
+        const statsBannedStudents = document.getElementById('statsBannedStudents');
+        const statsConfirmedBookings = document.getElementById('statsConfirmedBookings');
+        const statsCancelledBookings = document.getElementById('statsCancelledBookings');
+        
+        if (statsActiveStudents) statsActiveStudents.textContent = `${activeStudents} Active`;
+        if (statsBannedStudents) statsBannedStudents.textContent = `${bannedStudents} Banned`;
+        if (statsConfirmedBookings) statsConfirmedBookings.textContent = `${confirmedBookings} Confirmed`;
+        if (statsCancelledBookings) statsCancelledBookings.textContent = `${cancelledBookings} Cancelled`;
+        
+        // Calculate usage percentage (based on average daily bookings)
+        const totalDays = Math.max(1, Math.floor((new Date() - new Date('2024-01-01')) / (1000 * 60 * 60 * 24)));
+        const avgDailyBookings = Math.round(stats.totalBookings / totalDays);
+        const usagePercentage = Math.min(100, Math.round((avgDailyBookings / 17) * 100)); // 17 slots per day
+        
+        const statsUsagePercentage = document.getElementById('statsUsagePercentage');
+        if (statsUsagePercentage) statsUsagePercentage.textContent = `${usagePercentage}%`;
+        
+        // Load recent activity
+        loadRecentActivity();
+        
+        // Load booking status chart
+        loadBookingStatusChart(confirmedBookings, cancelledBookings);
+        
+        console.log('✅ Statistics data loaded successfully');
+    } catch (error) {
+        console.error('❌ Error loading statistics data:', error);
+        showNotification('Error loading statistics data', 'error');
+    }
 }
 
 function loadRecentActivity() {
@@ -2168,6 +2246,51 @@ function loadBookingStatusChart(confirmed, cancelled) {
             </div>
         </div>
     `;
+}
+
+// Export statistics data
+function exportStatistics() {
+    try {
+        const stats = db.getStatistics();
+        const students = db.getStudents();
+        const bookings = db.getBookings();
+        
+        const exportData = {
+            statistics: stats,
+            students: students,
+            bookings: bookings,
+            exportDate: new Date().toISOString(),
+            totalRecords: {
+                students: Object.keys(students).length,
+                bookings: bookings.length
+            }
+        };
+        
+        const dataStr = JSON.stringify(exportData, null, 2);
+        const dataBlob = new Blob([dataStr], {type: 'application/json'});
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `futsal_statistics_${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+        
+        showNotification('Statistics exported successfully!', 'success');
+    } catch (error) {
+        console.error('Error exporting statistics:', error);
+        showNotification('Error exporting statistics', 'error');
+    }
+}
+
+// Refresh statistics data
+function refreshStatistics() {
+    try {
+        loadStatisticsData();
+        showNotification('Statistics refreshed successfully!', 'success');
+    } catch (error) {
+        console.error('Error refreshing statistics:', error);
+        showNotification('Error refreshing statistics', 'error');
+    }
 }
 
 // Student management actions
