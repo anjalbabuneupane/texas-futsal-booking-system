@@ -1,0 +1,1663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Texas International College Futsal - Student Booking Portal</title>
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="description" content="Texas International College Futsal Booking System">
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+
+    
+    <!-- Security Headers -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+</head>
+<body>
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-user-graduate"></i> Student Login</h2>
+                <span class="close" onclick="closeLoginModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="loginForm" onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label for="studentId">Student ID</label>
+                        <input type="text" id="studentId" class="form-input" placeholder="Enter your student ID" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" class="form-input" placeholder="Enter your college internet password" required>
+                    </div>
+                    <button type="submit" class="login-btn">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Login
+                    </button>
+                </form>
+                <div class="login-info">
+                    <p><i class="fas fa-info-circle"></i> Use your college internet password to login</p>
+                    <p><i class="fas fa-user-shield"></i> Only registered students can book futsal</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Modal -->
+    <div id="adminModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-user-cog"></i> Admin Panel</h2>
+                <span class="close" onclick="closeAdminModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="adminForm" onsubmit="handleAdminLogin(event); return false;">
+                    <div class="form-group">
+                                                    <label for="adminUsername">Admin Username</label>
+                            <input type="text" id="adminUsername" class="form-input" placeholder="Enter admin username (texas)" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="adminPassword">Admin Password</label>
+                        <input type="password" id="adminPassword" class="form-input" placeholder="Enter admin password" required>
+                    </div>
+                    <button type="submit" class="admin-btn">
+                        <i class="fas fa-user-shield"></i>
+                        Admin Login
+                    </button>
+                    <button type="button" class="admin-btn secondary" onclick="forceUpdateAdminCredentials()" style="margin-top: 10px; background: #6b7280;">
+                        <i class="fas fa-sync-alt"></i>
+                        Reset Admin Credentials
+                    </button>
+                    <button type="button" class="admin-btn secondary" onclick="checkAdminCredentials()" style="margin-top: 5px; background: #059669;">
+                        <i class="fas fa-eye"></i>
+                        Check Credentials (Console)
+                    </button>
+                    <div id="databaseStatus" style="margin-top: 10px; padding: 8px; border-radius: 5px; font-size: 12px; text-align: center; background: #f3f4f6; border: 1px solid #d1d5db;">
+                        <span id="dbStatusText">Checking database...</span>
+                    </div>
+                    <button type="button" class="admin-btn secondary" onclick="testLogin()" style="margin-top: 5px; background: #dc2626;">
+                        <i class="fas fa-bug"></i>
+                        Test Login (Debug)
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Management Modal -->
+    <div id="studentManagementModal" class="modal">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-users"></i> Student Management</h2>
+                <span class="close" onclick="closeStudentManagementModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="management-tabs">
+                    <button class="tab-btn active" onclick="switchTab('students')">All Students</button>
+                    <button class="tab-btn" onclick="switchTab('banned')">Banned Students</button>
+                </div>
+                
+                <div id="studentsTab" class="tab-content active">
+                    <div class="search-bar">
+                        <input type="text" id="studentSearch" placeholder="Search students..." onkeyup="searchStudents()">
+                    </div>
+                    <div class="student-table-container">
+                        <table class="student-table">
+                            <thead>
+                                <tr>
+                                    <th>Student ID</th>
+                                    <th>Name</th>
+                                    <th>Program</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>Password</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="studentTableBody">
+                                <!-- Student data will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div id="bannedTab" class="tab-content">
+                    <div class="banned-students-list" id="bannedStudentsList">
+                        <!-- Banned students will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Database Modal -->
+    <div id="studentDatabaseModal" class="modal">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-database"></i> Student Database</h2>
+                <span class="close" onclick="closeStudentDatabaseModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="search-bar">
+                    <input type="text" id="studentDatabaseSearch" placeholder="Search students..." onkeyup="searchStudentDatabase()">
+                </div>
+                <div class="student-table-container">
+                    <table class="student-table">
+                        <thead>
+                            <tr>
+                                <th>Student ID</th>
+                                <th>Name</th>
+                                <th>Program</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Password</th>
+                                <th>Status</th>
+                                <th>Registered Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentDatabaseTableBody">
+                            <!-- Student database data will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Booking Database Modal -->
+    <div id="bookingDatabaseModal" class="modal">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-database"></i> Booking Database</h2>
+                <span class="close" onclick="closeBookingDatabaseModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="search-bar">
+                    <input type="text" id="bookingDatabaseSearch" placeholder="Search bookings..." onkeyup="searchBookingDatabase()">
+                </div>
+                <div class="booking-table-container">
+                    <table class="booking-table">
+                        <thead>
+                            <tr>
+                                <th>Booking ID</th>
+                                <th>Student ID</th>
+                                <th>Student Name</th>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Team</th>
+                                <th>Phone</th>
+                                <th>Status</th>
+                                <th>Booking Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bookingDatabaseTableBody">
+                            <!-- Booking database data will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Dashboard Modal -->
+    <div id="statisticsModal" class="modal">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-chart-line"></i> System Statistics Dashboard</h2>
+                <span class="close" onclick="closeStatisticsModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="statistics-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Total Students</h3>
+                            <div class="stat-number" id="statsTotalStudents">0</div>
+                            <div class="stat-details">
+                                <span class="stat-active" id="statsActiveStudents">0 Active</span>
+                                <span class="stat-banned" id="statsBannedStudents">0 Banned</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Total Bookings</h3>
+                            <div class="stat-number" id="statsTotalBookings">0</div>
+                            <div class="stat-details">
+                                <span class="stat-confirmed" id="statsConfirmedBookings">0 Confirmed</span>
+                                <span class="stat-cancelled" id="statsCancelledBookings">0 Cancelled</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-calendar-day"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Today's Bookings</h3>
+                            <div class="stat-number" id="statsTodayBookings">0</div>
+                            <div class="stat-details">
+                                <span class="stat-time">Last 24 hours</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>System Usage</h3>
+                            <div class="stat-number" id="statsUsagePercentage">0%</div>
+                            <div class="stat-details">
+                                <span class="stat-time">Average daily bookings</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="statistics-charts">
+                    <div class="chart-section">
+                        <h3><i class="fas fa-chart-pie"></i> Booking Status Distribution</h3>
+                        <div class="chart-container" id="bookingStatusChart">
+                            <!-- Chart will be rendered here -->
+                        </div>
+                    </div>
+                    
+                    <div class="chart-section">
+                        <h3><i class="fas fa-chart-line"></i> Recent Activity</h3>
+                        <div class="recent-activity" id="recentActivity">
+                            <!-- Recent activity will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="statistics-actions">
+                    <button class="admin-action-btn" onclick="exportStatistics()">
+                        <i class="fas fa-download"></i>
+                        Export Statistics
+                    </button>
+                    <button class="admin-action-btn" onclick="refreshStatistics()">
+                        <i class="fas fa-sync-alt"></i>
+                        Refresh Data
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Security Logs Dashboard Modal -->
+    <div id="securityLogsModal" class="modal">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-shield-alt"></i> Security Logs Dashboard</h2>
+                <span class="close" onclick="closeSecurityLogsModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="security-controls">
+                    <button class="admin-action-btn" onclick="refreshSecurityLogs()">
+                        <i class="fas fa-sync-alt"></i>
+                        Refresh Logs
+                    </button>
+                    <button class="admin-action-btn" onclick="exportSecurityLogs()">
+                        <i class="fas fa-download"></i>
+                        Export Logs
+                    </button>
+                    <button class="admin-action-btn security-btn" onclick="clearSecurityLogs()">
+                        <i class="fas fa-trash"></i>
+                        Clear All Logs
+                    </button>
+                </div>
+                
+                <div class="security-stats">
+                    <div class="security-stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Total Security Events</h3>
+                            <div class="stat-number" id="totalSecurityEvents">0</div>
+                        </div>
+                    </div>
+                    
+                    <div class="security-stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-user-shield"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Login Attempts</h3>
+                            <div class="stat-number" id="totalLoginAttempts">0</div>
+                        </div>
+                    </div>
+                    
+                    <div class="security-stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-times-circle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Failed Attempts</h3>
+                            <div class="stat-number" id="totalFailedAttempts">0</div>
+                        </div>
+                    </div>
+                    
+                    <div class="security-stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-shield-virus"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Security Threats</h3>
+                            <div class="stat-number" id="totalSecurityThreats">0</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="security-filters">
+                    <div class="filter-group">
+                        <label for="securityEventFilter">Filter by Event Type:</label>
+                        <select id="securityEventFilter" onchange="filterSecurityLogs()">
+                            <option value="all">All Events</option>
+                            <option value="admin_login">Admin Login</option>
+                            <option value="dev_tools">Developer Tools</option>
+                            <option value="view_source">View Source</option>
+                            <option value="right_click">Right Click</option>
+                            <option value="console_access">Console Access</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="securityDateFilter">Filter by Date:</label>
+                        <input type="date" id="securityDateFilter" onchange="filterSecurityLogs()">
+                    </div>
+                </div>
+                
+                <div class="security-logs-container">
+                    <table class="security-logs-table">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Event Type</th>
+                                <th>Details</th>
+                                <th>User</th>
+                                <th>IP/Client</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="securityLogsTableBody">
+                            <!-- Security logs will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="security-summary">
+                    <h3><i class="fas fa-chart-line"></i> Security Summary</h3>
+                    <div class="summary-content" id="securitySummary">
+                        <!-- Security summary will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Security Status Dashboard Modal -->
+    <div id="securityStatusModal" class="modal">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-shield-check"></i> Security Status Dashboard</h2>
+                <span class="close" onclick="closeSecurityStatusModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="security-status-overview">
+                    <div class="status-header">
+                        <h3><i class="fas fa-shield-alt"></i> System Security Overview</h3>
+                        <button class="admin-action-btn" onclick="refreshSecurityStatus()">
+                            <i class="fas fa-sync-alt"></i>
+                            Refresh Status
+                        </button>
+                    </div>
+                    
+                    <div class="security-status-grid">
+                        <div class="status-card">
+                            <div class="status-icon">
+                                <i class="fas fa-lock"></i>
+                            </div>
+                            <div class="status-content">
+                                <h4>Data Encryption</h4>
+                                <div class="status-indicator active">Active</div>
+                                <p>All data is encrypted using XOR + Base64</p>
+                            </div>
+                        </div>
+                        
+                        <div class="status-card">
+                            <div class="status-icon">
+                                <i class="fas fa-ban"></i>
+                            </div>
+                            <div class="status-content">
+                                <h4>Developer Tools</h4>
+                                <div class="status-indicator active">Blocked</div>
+                                <p>F12, Ctrl+Shift+I, Ctrl+U are blocked</p>
+                            </div>
+                        </div>
+                        
+                        <div class="status-card">
+                            <div class="status-icon">
+                                <i class="fas fa-mouse-pointer"></i>
+                            </div>
+                            <div class="status-content">
+                                <h4>Right Click</h4>
+                                <div class="status-indicator active">Disabled</div>
+                                <p>Context menu is disabled</p>
+                            </div>
+                        </div>
+                        
+                        <div class="status-card">
+                            <div class="status-icon">
+                                <i class="fas fa-terminal"></i>
+                            </div>
+                            <div class="status-content">
+                                <h4>Console Access</h4>
+                                <div class="status-indicator active">Monitored</div>
+                                <p>Console access is logged and monitored</p>
+                            </div>
+                        </div>
+                        
+                        <div class="status-card">
+                            <div class="status-icon">
+                                <i class="fas fa-user-shield"></i>
+                            </div>
+                            <div class="status-content">
+                                <h4>Admin Authentication</h4>
+                                <div class="status-indicator active">Secure</div>
+                                <p>Enhanced login with no password hints</p>
+                            </div>
+                        </div>
+                        
+                        <div class="status-card">
+                            <div class="status-icon">
+                                <i class="fas fa-eye-slash"></i>
+                            </div>
+                            <div class="status-content">
+                                <h4>Text Selection</h4>
+                                <div class="status-indicator active">Disabled</div>
+                                <p>Text selection is disabled</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="security-details">
+                    <div class="security-section">
+                        <h3><i class="fas fa-chart-line"></i> Security Metrics</h3>
+                        <div class="metrics-grid">
+                            <div class="metric-item">
+                                <div class="metric-value" id="totalSecurityEvents">0</div>
+                                <div class="metric-label">Total Security Events</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-value" id="todaySecurityEvents">0</div>
+                                <div class="metric-label">Today's Events</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-value" id="failedLoginAttempts">0</div>
+                                <div class="metric-label">Failed Login Attempts</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-value" id="securityThreats">0</div>
+                                <div class="metric-label">Security Threats</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="security-section">
+                        <h3><i class="fas fa-exclamation-triangle"></i> Recent Security Alerts</h3>
+                        <div class="alerts-container" id="securityAlerts">
+                            <!-- Security alerts will be loaded here -->
+                        </div>
+                    </div>
+                    
+                    <div class="security-section">
+                        <h3><i class="fas fa-cog"></i> Security Configuration</h3>
+                        <div class="config-grid">
+                            <div class="config-item">
+                                <label>Admin Username:</label>
+                                <span class="config-value">texas</span>
+                            </div>
+                            <div class="config-item">
+                                <label>Password Policy:</label>
+                                <span class="config-value">Enhanced (No hints)</span>
+                            </div>
+                            <div class="config-item">
+                                <label>Session Timeout:</label>
+                                <span class="config-value">Browser-based</span>
+                            </div>
+                            <div class="config-item">
+                                <label>Data Encryption:</label>
+                                <span class="config-value">XOR + Base64</span>
+                            </div>
+                            <div class="config-item">
+                                <label>Security Level:</label>
+                                <span class="config-value high">High</span>
+                            </div>
+                            <div class="config-item">
+                                <label>Last Security Check:</label>
+                                <span class="config-value" id="lastSecurityCheck">Just now</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="security-actions">
+                    <button class="admin-action-btn" onclick="testSecurityFeatures()">
+                        <i class="fas fa-vial"></i>
+                        Test Security Features
+                    </button>
+                    <button class="admin-action-btn" onclick="exportSecurityReport()">
+                        <i class="fas fa-file-export"></i>
+                        Export Security Report
+                    </button>
+                    <button class="admin-action-btn security-btn" onclick="resetSecuritySettings()">
+                        <i class="fas fa-redo"></i>
+                        Reset Security Settings
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Booking Management Modal -->
+    <div id="bookingManagementModal" class="modal">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-calendar-alt"></i> Booking Management</h2>
+                <span class="close" onclick="closeBookingManagementModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="management-tabs">
+                    <button class="tab-btn active" onclick="switchBookingTab('all')">All Bookings</button>
+                    <button class="tab-btn" onclick="switchBookingTab('today')">Today's Bookings</button>
+                    <button class="tab-btn" onclick="switchBookingTab('upcoming')">Upcoming</button>
+                </div>
+                
+                <div id="allBookingsTab" class="tab-content active">
+                    <div class="search-bar">
+                        <input type="text" id="bookingSearch" placeholder="Search bookings..." onkeyup="searchBookings()">
+                    </div>
+                    <div class="booking-table-container">
+                        <table class="booking-table">
+                            <thead>
+                                <tr>
+                                    <th>Booking ID</th>
+                                    <th>Student</th>
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                    <th>Team</th>
+                                    <th>Phone</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bookingTableBody">
+                                <!-- Booking data will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div id="todayBookingsTab" class="tab-content">
+                    <div class="today-bookings-list" id="todayBookingsList">
+                        <!-- Today's bookings will be loaded here -->
+                    </div>
+                </div>
+                
+                <div id="upcomingBookingsTab" class="tab-content">
+                    <div class="upcoming-bookings-list" id="upcomingBookingsList">
+                        <!-- Upcoming bookings will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <nav class="navbar">
+            <div class="nav-container">
+                <div class="nav-logo">
+                    <img src="https://texasintl.edu.np/wp-content/uploads/2024/01/texas-logo.png" alt="Texas International College" class="logo">
+                </div>
+                <div class="nav-menu">
+                    <a href="#home" class="nav-link">Home</a>
+                    <a href="#booking" class="nav-link">Book Futsal</a>
+                    <a href="#reviews" class="nav-link">Reviews</a>
+                    <a href="#contact" class="nav-link">Contact</a>
+                </div>
+                <div class="nav-actions">
+                    <button class="login-btn-nav" onclick="document.getElementById('loginModal').style.display='block'; console.log('Login modal opened');">
+                        <i class="fas fa-user-graduate"></i>
+                        Student Login
+                    </button>
+                    <button class="admin-btn-nav" onclick="try { document.getElementById('adminModal').style.display='block'; console.log('Admin modal opened successfully'); } catch(e) { console.error('Error opening admin modal:', e); alert('Error opening admin modal: ' + e.message); }">
+                        <i class="fas fa-user-cog"></i>
+                        Admin
+                    </button>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Student Dashboard -->
+    <div id="studentDashboard" class="dashboard" style="display: none;">
+        <div class="dashboard-header">
+            <div class="dashboard-title">
+                <h1><i class="fas fa-user-graduate"></i> Student Dashboard</h1>
+                <p>Welcome back, <span id="studentNameHeader">Student</span>!</p>
+            </div>
+            <div class="dashboard-actions">
+                <button class="dashboard-btn" onclick="showStudentBookings()">
+                    <i class="fas fa-calendar-alt"></i>
+                    My Bookings
+                </button>
+                <button class="dashboard-btn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                </button>
+            </div>
+        </div>
+        
+        <div class="dashboard-content">
+            <div class="dashboard-grid">
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <i class="fas fa-user"></i>
+                        <h3>Student Information</h3>
+                    </div>
+                    <div class="card-content">
+                        <p><strong>Name:</strong> <span id="studentNameCard">-</span></p>
+                        <p><strong>ID:</strong> <span id="studentIdCard">-</span></p>
+                        <p><strong>Program:</strong> <span id="studentProgramCard">-</span></p>
+                        <p><strong>Status:</strong> <span class="status-active">Active</span></p>
+                    </div>
+                </div>
+                
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <i class="fas fa-calendar-check"></i>
+                        <h3>Quick Book</h3>
+                    </div>
+                    <div class="card-content">
+                        <form id="quickBookForm" onsubmit="handleQuickBooking(event)">
+                            <div class="form-group">
+                                <label for="quickDate">Date</label>
+                                <input type="date" id="quickDate" class="form-input" min="" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="quickTime">Time</label>
+                                <select id="quickTime" class="form-input" required>
+                                    <option value="">Choose time</option>
+                                    <option value="06:15">6:15 AM - 7:15 AM</option>
+                                    <option value="07:15">7:15 AM - 8:15 AM</option>
+                                    <option value="08:15">8:15 AM - 9:15 AM</option>
+                                    <option value="09:15">9:15 AM - 10:15 AM</option>
+                                    <option value="10:15">10:15 AM - 11:15 AM</option>
+                                    <option value="11:15">11:15 AM - 12:15 PM</option>
+                                    <option value="12:15">12:15 PM - 1:15 PM</option>
+                                    <option value="13:15">1:15 PM - 2:15 PM</option>
+                                    <option value="14:15">2:15 PM - 3:15 PM</option>
+                                    <option value="15:15">3:15 PM - 4:15 PM</option>
+                                    <option value="16:15">4:15 PM - 5:15 PM</option>
+                                    <option value="17:15">5:15 PM - 6:15 PM</option>
+                                    <option value="18:15">6:15 PM - 7:15 PM</option>
+                                    <option value="19:15">7:15 PM - 8:15 PM</option>
+                                    <option value="20:15">8:15 PM - 9:15 PM</option>
+                                    <option value="21:15">9:15 PM - 10:15 PM</option>
+                                    <option value="22:15">10:15 PM - 11:00 PM</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="quickTeam">Team Name</label>
+                                <input type="text" id="quickTeam" class="form-input" placeholder="Enter team name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="quickPhone">Phone</label>
+                                <input type="tel" id="quickPhone" class="form-input" placeholder="Enter phone number" required>
+                            </div>
+                            <button type="submit" class="book-btn">
+                                <i class="fas fa-calendar-plus"></i>
+                                Book Now
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <i class="fas fa-calendar-check"></i>
+                        <h3>My Bookings Dashboard</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="booking-tabs">
+                            <button class="tab-btn active" onclick="switchMyBookingTab('active')">Active Bookings</button>
+                            <button class="tab-btn" onclick="switchMyBookingTab('past')">Past Bookings</button>
+                            <button class="tab-btn" onclick="switchMyBookingTab('cancelled')">Cancelled</button>
+                        </div>
+                        <div id="myBookingsContent">
+                            <div id="activeBookingsTab" class="tab-content active">
+                                <div class="booking-list" id="activeBookingsList">
+                                    <!-- Active bookings will be loaded here -->
+                                </div>
+                            </div>
+                            <div id="pastBookingsTab" class="tab-content">
+                                <div class="booking-list" id="pastBookingsList">
+                                    <!-- Past bookings will be loaded here -->
+                                </div>
+                            </div>
+                            <div id="cancelledBookingsTab" class="tab-content">
+                                <div class="booking-list" id="cancelledBookingsList">
+                                    <!-- Cancelled bookings will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <i class="fas fa-chart-bar"></i>
+                        <h3>Statistics</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <span class="stat-number" id="totalBookings">0</span>
+                                <span class="stat-label">Total Bookings</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number" id="thisMonth">0</span>
+                                <span class="stat-label">This Month</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number" id="hoursPlayed">0</span>
+                                <span class="stat-label">Hours Played</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div id="adminDashboard" class="dashboard" style="display: none;">
+        <div class="dashboard-header">
+            <div class="dashboard-title">
+                <h1><i class="fas fa-user-cog"></i> Admin Dashboard</h1>
+                <p>System Administration Panel</p>
+            </div>
+            <div class="dashboard-actions">
+                <button class="dashboard-btn" onclick="showAdminStats()">
+                    <i class="fas fa-chart-line"></i>
+                    Statistics
+                </button>
+                <button class="dashboard-btn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                </button>
+            </div>
+        </div>
+        
+        <div class="dashboard-content">
+            <div class="dashboard-grid">
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <i class="fas fa-user-plus"></i>
+                        <h3>Register New Student</h3>
+                    </div>
+                    <div class="card-content">
+                        <form id="registerStudentForm" onsubmit="handleStudentRegistration(event)">
+                            <div class="form-group">
+                                <label for="newStudentId">Student ID</label>
+                                <input type="text" id="newStudentId" class="form-input" placeholder="e.g., TIC006" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="newStudentName">Full Name</label>
+                                <input type="text" id="newStudentName" class="form-input" placeholder="Enter full name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="newStudentProgram">Program</label>
+                                <select id="newStudentProgram" class="form-input" required>
+                                    <option value="">Select Program</option>
+                                    <optgroup label="Bachelor Programs">
+                                        <option value="BSc. CSIT">BSc. CSIT</option>
+                                        <option value="BCA">BCA</option>
+                                        <option value="BBM">BBM</option>
+                                        <option value="BBS">BBS</option>
+                                        <option value="BSW">BSW</option>
+                                    </optgroup>
+                                    <optgroup label="Master Programs">
+                                        <option value="MBS">MBS</option>
+                                        <option value="MSc. CSIT">MSc. CSIT</option>
+                                    </optgroup>
+                                    <optgroup label="+2 Programs">
+                                        <option value="+2 Science">+2 Science</option>
+                                        <option value="+2 Management">+2 Management</option>
+                                        <option value="+2 Humanities">+2 Humanities</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="newStudentEmail">Email</label>
+                                <input type="email" id="newStudentEmail" class="form-input" placeholder="Enter email address" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="newStudentPhone">Phone</label>
+                                <input type="tel" id="newStudentPhone" class="form-input" placeholder="Enter phone number" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="newStudentPassword">Password (Optional)</label>
+                                <input type="password" id="newStudentPassword" class="form-input" placeholder="Leave empty for auto-generated password">
+                                <small class="form-help">Leave empty to auto-generate a password</small>
+                            </div>
+                            <button type="submit" class="admin-action-btn">
+                                <i class="fas fa-user-plus"></i>
+                                Register Student
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <i class="fas fa-users"></i>
+                        <h3>Student Database Management</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="database-controls">
+                            <button class="admin-action-btn" onclick="showStudentDatabase()">
+                                <i class="fas fa-database"></i>
+                                View Student Database
+                            </button>
+                            <button class="admin-action-btn" onclick="showStudentManagement()">
+                                <i class="fas fa-user-cog"></i>
+                                Manage Students
+                            </button>
+                            <button class="admin-action-btn" onclick="exportStudentData()">
+                                <i class="fas fa-download"></i>
+                                Export Data
+                            </button>
+                        </div>
+                        <div id="studentDatabase">
+                            <p class="no-data">Click "View Student Database" to see all students with passwords</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <i class="fas fa-calendar-alt"></i>
+                        <h3>Booking Management</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="booking-controls">
+                            <button class="admin-action-btn" onclick="showBookingDatabase()">
+                                <i class="fas fa-database"></i>
+                                View Booking Database
+                            </button>
+                            <button class="admin-action-btn" onclick="showBookingManagement()">
+                                <i class="fas fa-calendar-times"></i>
+                                Manage Bookings
+                            </button>
+                            <button class="admin-action-btn" onclick="exportBookingData()">
+                                <i class="fas fa-download"></i>
+                                Export Bookings
+                            </button>
+                        </div>
+                        <div id="bookingManagement">
+                            <p class="no-data">Click "View Booking Database" to see all bookings</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <i class="fas fa-chart-pie"></i>
+                        <h3>System Statistics</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="admin-stats">
+                            <div class="stat-item">
+                                <span class="stat-number" id="totalStudents">0</span>
+                                <span class="stat-label">Total Students</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number" id="totalBookingsAdmin">0</span>
+                                <span class="stat-label">Total Bookings</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number" id="activeStudents">0</span>
+                                <span class="stat-label">Active Students</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number" id="todayBookings">0</span>
+                                <span class="stat-label">Today's Bookings</span>
+                            </div>
+                        </div>
+                        <div class="statistics-actions">
+                            <button class="admin-action-btn" onclick="showStatisticsDashboard()">
+                                <i class="fas fa-chart-line"></i>
+                                View Detailed Statistics
+                            </button>
+                            <button class="admin-action-btn" onclick="exportBackup()">
+                                <i class="fas fa-download"></i>
+                                Export Backup
+                            </button>
+                            <button class="admin-action-btn security-btn" onclick="clearAllData()">
+                                <i class="fas fa-shield-alt"></i>
+                                Clear All Data (Security)
+                            </button>
+                            <button class="admin-action-btn" onclick="viewSecurityLogs()">
+                                <i class="fas fa-eye"></i>
+                                View Security Logs
+                            </button>
+                            <button class="admin-action-btn" onclick="showSecurityStatusDashboard()">
+                                <i class="fas fa-shield-check"></i>
+                                Security Status Dashboard
+                            </button>
+                            <button class="admin-action-btn" onclick="showSecurityLogsDashboard()">
+                                <i class="fas fa-shield-alt"></i>
+                                Security Logs Dashboard
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-container">
+            <div class="hero-content">
+                <div class="college-logo-section">
+                    <img src="images/logotex.png" alt="Texas International College Logo" class="college-logo">
+                </div>
+                <h1 class="hero-title">Texas International College Futsal</h1>
+                <p class="hero-subtitle">Exclusive futsal booking portal for Texas International College students. Book your game using your college credentials!</p>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <span class="stat-number">4.9</span>
+                        <span class="stat-label">Rating</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">500+</span>
+                        <span class="stat-label">Students</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">24/7</span>
+                        <span class="stat-label">Booking</span>
+                    </div>
+                </div>
+                <button class="cta-btn" onclick="openLoginModal()">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Login to Book
+                </button>
+            </div>
+            <div class="hero-image">
+                <img src="images/500x1000.jpg" alt="Texas International College Campus" class="hero-img">
+            </div>
+        </div>
+    </section>
+
+    <!-- Opening Hours Section -->
+    <section class="hours-section">
+        <div class="container">
+            <div class="hours-card">
+                <div class="hours-header">
+                    <h2><i class="fas fa-clock"></i> Opening Hours</h2>
+                    <div class="status">
+                        <span class="status-dot open"></span>
+                        <span class="status-text">Open · Closes at 11 PM</span>
+                    </div>
+                </div>
+                <div class="hours-grid">
+                    <div class="day">
+                        <span class="day-name">Sunday</span>
+                        <span class="day-hours">6:15 AM - 11 PM</span>
+                    </div>
+                    <div class="day">
+                        <span class="day-name">Monday</span>
+                        <span class="day-hours">6:15 AM - 11 PM</span>
+                    </div>
+                    <div class="day">
+                        <span class="day-name">Tuesday</span>
+                        <span class="day-hours">6:15 AM - 11 PM</span>
+                    </div>
+                    <div class="day">
+                        <span class="day-name">Wednesday</span>
+                        <span class="day-hours">6:15 AM - 11 PM</span>
+                    </div>
+                    <div class="day">
+                        <span class="day-name">Thursday</span>
+                        <span class="day-hours">6:15 AM - 11 PM</span>
+                    </div>
+                    <div class="day">
+                        <span class="day-name">Friday</span>
+                        <span class="day-hours">6:15 AM - 11 PM</span>
+                    </div>
+                    <div class="day">
+                        <span class="day-name">Saturday</span>
+                        <span class="day-hours">6:15 AM - 11 PM</span>
+                    </div>
+                </div>
+                <p class="timezone">Time zone (Nepal Time)</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Admin Dashboard Section -->
+    <div id="adminDashboard" class="dashboard-section" style="display: none;">
+        <div class="container">
+            <div class="dashboard-header">
+                <h2><i class="fas fa-user-cog"></i> Admin Dashboard</h2>
+                <button class="logout-btn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+            
+            <div class="admin-grid">
+                <div class="admin-card">
+                    <h3><i class="fas fa-user-plus"></i> Register New Student</h3>
+                    <form id="registerForm" onsubmit="handleStudentRegistration(event)">
+                        <div class="form-group">
+                            <label>Student ID</label>
+                            <input type="text" id="newStudentId" class="form-input" placeholder="e.g., TIC006" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Full Name</label>
+                            <input type="text" id="newStudentName" class="form-input" placeholder="Enter full name" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Program</label>
+                            <select id="newStudentProgram" class="form-input" required>
+                                <option value="">Select Program</option>
+                                <optgroup label="Bachelor Programs">
+                                    <option value="BSc. CSIT">BSc. CSIT</option>
+                                    <option value="BCA">BCA</option>
+                                    <option value="BBM">BBM</option>
+                                    <option value="BBS">BBS</option>
+                                    <option value="BSW">BSW</option>
+                                </optgroup>
+                                <optgroup label="Master Programs">
+                                    <option value="MBS">MBS</option>
+                                    <option value="MSc. CSIT">MSc. CSIT</option>
+                                </optgroup>
+                                <optgroup label="+2 Programs">
+                                    <option value="+2 Science">+2 Science</option>
+                                    <option value="+2 Management">+2 Management</option>
+                                    <option value="+2 Humanities">+2 Humanities</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="newStudentEmail" class="form-input" placeholder="Enter email" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Phone</label>
+                            <input type="tel" id="newStudentPhone" class="form-input" placeholder="Enter phone" required>
+                        </div>
+                        <button type="submit" class="admin-btn">
+                            <i class="fas fa-user-plus"></i> Register Student
+                        </button>
+                    </form>
+                </div>
+                
+                <div class="admin-card">
+                    <h3><i class="fas fa-users"></i> Student Database</h3>
+                    <div class="admin-actions">
+                        <button class="admin-action-btn" onclick="viewAllStudents()">
+                            <i class="fas fa-list"></i> View All Students
+                        </button>
+                        <button class="admin-action-btn" onclick="showStudentManagement()">
+                            <i class="fas fa-user-cog"></i> Manage Students
+                        </button>
+                        <button class="admin-action-btn" onclick="exportStudentData()">
+                            <i class="fas fa-download"></i> Export Students
+                        </button>
+                    </div>
+                    <div id="studentList"></div>
+                </div>
+                
+                <div class="admin-card">
+                    <h3><i class="fas fa-calendar-alt"></i> Booking Management</h3>
+                    <div class="admin-actions">
+                        <button class="admin-action-btn" onclick="viewAllBookings()">
+                            <i class="fas fa-calendar-check"></i> View All Bookings
+                        </button>
+                        <button class="admin-action-btn" onclick="showBookingManagement()">
+                            <i class="fas fa-calendar-times"></i> Manage Bookings
+                        </button>
+                        <button class="admin-action-btn" onclick="exportBookingData()">
+                            <i class="fas fa-download"></i> Export Bookings
+                        </button>
+                    </div>
+                    <div id="bookingList"></div>
+                </div>
+                
+                <div class="admin-card">
+                    <h3><i class="fas fa-chart-bar"></i> Statistics</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-number" id="totalStudents">0</span>
+                            <span class="stat-label">Total Students</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="totalBookings">0</span>
+                            <span class="stat-label">Total Bookings</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="todayBookings">0</span>
+                            <span class="stat-label">Today's Bookings</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="activeStudents">0</span>
+                            <span class="stat-label">Active Students</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Dashboard Section -->
+    <div id="studentDashboard" class="dashboard-section" style="display: none;">
+        <div class="container">
+            <div class="dashboard-header">
+                <h2><i class="fas fa-user-graduate"></i> Student Dashboard</h2>
+                <button class="logout-btn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+            
+            <div class="student-grid">
+                <div class="student-card">
+                    <h3><i class="fas fa-user"></i> Student Information</h3>
+                    <div class="student-info">
+                        <p><strong>Name:</strong> <span id="studentNameDisplay">-</span></p>
+                        <p><strong>ID:</strong> <span id="studentIdDisplay">-</span></p>
+                        <p><strong>Program:</strong> <span id="studentProgramDisplay">-</span></p>
+                        <p><strong>Status:</strong> <span class="status-active">Active</span></p>
+                    </div>
+                </div>
+                
+                <div class="student-card">
+                    <h3><i class="fas fa-calendar-plus"></i> Quick Book</h3>
+                    <form id="quickBookForm" onsubmit="handleQuickBooking(event)">
+                        <div class="form-group">
+                            <label>Date</label>
+                            <input type="date" id="quickDate" class="form-input" min="" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Time</label>
+                            <select id="quickTime" class="form-input" required>
+                                <option value="">Choose time</option>
+                                <option value="06:15">6:15 AM - 7:15 AM</option>
+                                <option value="07:15">7:15 AM - 8:15 AM</option>
+                                <option value="08:15">8:15 AM - 9:15 AM</option>
+                                <option value="09:15">9:15 AM - 10:15 AM</option>
+                                <option value="10:15">10:15 AM - 11:15 AM</option>
+                                <option value="11:15">11:15 AM - 12:15 PM</option>
+                                <option value="12:15">12:15 PM - 1:15 PM</option>
+                                <option value="13:15">1:15 PM - 2:15 PM</option>
+                                <option value="14:15">2:15 PM - 3:15 PM</option>
+                                <option value="15:15">3:15 PM - 4:15 PM</option>
+                                <option value="16:15">4:15 PM - 5:15 PM</option>
+                                <option value="17:15">5:15 PM - 6:15 PM</option>
+                                <option value="18:15">6:15 PM - 7:15 PM</option>
+                                <option value="19:15">7:15 PM - 8:15 PM</option>
+                                <option value="20:15">8:15 PM - 9:15 PM</option>
+                                <option value="21:15">9:15 PM - 10:15 PM</option>
+                                <option value="22:15">10:15 PM - 11:00 PM</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Team Name</label>
+                            <input type="text" id="quickTeam" class="form-input" placeholder="Enter team name" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Phone</label>
+                            <input type="tel" id="quickPhone" class="form-input" placeholder="Enter phone" required>
+                        </div>
+                        <button type="submit" class="book-btn">
+                            <i class="fas fa-calendar-plus"></i> Book Now
+                        </button>
+                    </form>
+                </div>
+                
+                <div class="student-card">
+                    <h3><i class="fas fa-history"></i> My Bookings</h3>
+                    <div id="myBookings">
+                        <p class="no-bookings">No bookings found</p>
+                    </div>
+                </div>
+                
+                <div class="student-card">
+                    <h3><i class="fas fa-chart-bar"></i> My Statistics</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-number" id="myTotalBookings">0</span>
+                            <span class="stat-label">Total Bookings</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="myThisMonth">0</span>
+                            <span class="stat-label">This Month</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="myHoursPlayed">0</span>
+                            <span class="stat-label">Hours Played</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Booking Section -->
+    <section id="booking" class="booking-section">
+        <div class="container">
+            <div class="booking-header">
+                <h2>Book Your Futsal Game</h2>
+                <p>Login with your college credentials to book your preferred time slot</p>
+            </div>
+            
+            <div class="booking-container">
+                <div class="booking-form" id="bookingForm" style="display: none;">
+                    <div class="student-info">
+                        <h3><i class="fas fa-user-graduate"></i> Student Information</h3>
+                        <p><strong>Name:</strong> <span id="studentName">-</span></p>
+                        <p><strong>ID:</strong> <span id="studentIdDisplay">-</span></p>
+                        <p><strong>Program:</strong> <span id="studentProgram">-</span></p>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="date">Select Date</label>
+                        <input type="date" id="date" class="form-input" min="">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="time">Select Time</label>
+                        <select id="time" class="form-input">
+                            <option value="">Choose time slot</option>
+                            <option value="06:15">6:15 AM - 7:15 AM</option>
+                            <option value="07:15">7:15 AM - 8:15 AM</option>
+                            <option value="08:15">8:15 AM - 9:15 AM</option>
+                            <option value="09:15">9:15 AM - 10:15 AM</option>
+                            <option value="10:15">10:15 AM - 11:15 AM</option>
+                            <option value="11:15">11:15 AM - 12:15 PM</option>
+                            <option value="12:15">12:15 PM - 1:15 PM</option>
+                            <option value="13:15">1:15 PM - 2:15 PM</option>
+                            <option value="14:15">2:15 PM - 3:15 PM</option>
+                            <option value="15:15">3:15 PM - 4:15 PM</option>
+                            <option value="16:15">4:15 PM - 5:15 PM</option>
+                            <option value="17:15">5:15 PM - 6:15 PM</option>
+                            <option value="18:15">6:15 PM - 7:15 PM</option>
+                            <option value="19:15">7:15 PM - 8:15 PM</option>
+                            <option value="20:15">8:15 PM - 9:15 PM</option>
+                            <option value="21:15">9:15 PM - 10:15 PM</option>
+                            <option value="22:15">10:15 PM - 11:00 PM</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="team-name">Team Name</label>
+                        <input type="text" id="team-name" class="form-input" placeholder="Enter your team name">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="phone">Phone Number</label>
+                        <input type="tel" id="phone" class="form-input" placeholder="Enter your phone number">
+                    </div>
+                    
+                    <button type="submit" class="book-btn" onclick="handleBooking()">
+                        <i class="fas fa-calendar-check"></i>
+                        Book Now - Free for Students
+                    </button>
+                    
+                    <button type="button" class="logout-btn" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Logout
+                    </button>
+                </div>
+                
+                <div class="booking-info">
+                    <div class="info-card">
+                        <h3><i class="fas fa-info-circle"></i> Booking Policy</h3>
+                        <ul class="policy-list">
+                            <li>Only registered Texas International College students can book</li>
+                            <li>Use your college internet password to login</li>
+                            <li>Free booking for all students</li>
+                            <li>Maximum 1 hour per booking</li>
+                            <li>Confirmation call will be made within 5 minutes</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="info-card">
+                        <h3><i class="fas fa-star"></i> What's Included</h3>
+                        <ul class="features-list">
+                            <li><i class="fas fa-check"></i> Professional futsal court</li>
+                            <li><i class="fas fa-check"></i> Quality equipment provided</li>
+                            <li><i class="fas fa-check"></i> Clean facilities</li>
+                            <li><i class="fas fa-check"></i> Parking available</li>
+                            <li><i class="fas fa-check"></i> Instant confirmation</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Reviews Section -->
+    <section id="reviews" class="reviews-section">
+        <div class="container">
+            <div class="reviews-header">
+                <h2>Student Reviews</h2>
+                <div class="rating-summary">
+                    <div class="rating">
+                        <span class="rating-number">4.9</span>
+                        <div class="stars">
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <span class="review-count">500+ student reviews</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="reviews-grid">
+                <div class="review-card">
+                    <div class="review-header">
+                        <div class="reviewer-info">
+                            <div class="reviewer-avatar">MK</div>
+                            <div class="reviewer-details">
+                                <h4>Manish Karki</h4>
+                                <span class="student-program">BSc. CSIT Student</span>
+                                <div class="stars">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <span class="review-date">2 days ago</span>
+                    </div>
+                    <p class="review-text">Best futsal facility for students! The online booking system is super convenient. Got confirmation call within 3 minutes. Perfect for stress relief after classes.</p>
+                </div>
+                
+                <div class="review-card">
+                    <div class="review-header">
+                        <div class="reviewer-info">
+                            <div class="reviewer-avatar">SK</div>
+                            <div class="reviewer-details">
+                                <h4>Subarna Karki</h4>
+                                <span class="student-program">BBM Student</span>
+                                <div class="stars">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <span class="review-date">1 week ago</span>
+                    </div>
+                    <p class="review-text">Amazing experience! The online booking was so easy to use. Available slots were clearly shown and I could choose exactly what I wanted. The facility is top-notch!</p>
+                </div>
+                
+                <div class="review-card">
+                    <div class="review-header">
+                        <div class="reviewer-info">
+                            <div class="reviewer-avatar">RJ</div>
+                            <div class="reviewer-details">
+                                <h4>Rajesh Joshi</h4>
+                                <span class="student-program">BCA Student</span>
+                                <div class="stars">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <span class="review-date">2 weeks ago</span>
+                    </div>
+                    <p class="review-text">This was my first time using the futsal booking system. The online booking concept is brilliant - very user-friendly. Within 5 minutes I got a confirmation call.</p>
+                </div>
+            </div>
+            
+            <div class="write-review">
+                <button class="review-btn" onclick="openLoginModal()">
+                    <i class="fas fa-edit"></i>
+                    Login to Write Review
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="contact-section">
+        <div class="container">
+            <div class="contact-header">
+                <h2>Contact Us</h2>
+                <p>Get in touch with us for any questions or special requests</p>
+            </div>
+            
+            <div class="contact-grid">
+                <div class="contact-card">
+                    <div class="contact-icon">
+                        <i class="fas fa-phone"></i>
+                    </div>
+                    <h3>Phone</h3>
+                    <p>01-4590670</p>
+                    <p>9801644462</p>
+                </div>
+                
+                <div class="contact-card">
+                    <div class="contact-icon">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <h3>Email</h3>
+                    <p>info@texasintl.edu.np</p>
+                    <p>futsal@texasintl.edu.np</p>
+                </div>
+                
+                <div class="contact-card">
+                    <div class="contact-icon">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </div>
+                    <h3>Address</h3>
+                    <p>Texas International College</p>
+                    <p>Mitrapark, Chabahil, Kathmandu</p>
+                </div>
+                
+                <div class="contact-card">
+                    <div class="contact-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <h3>Hours</h3>
+                    <p>Daily: 6:15 AM - 11 PM</p>
+                    <p>Nepal Time Zone</p>
+                </div>
+            </div>
+            
+            <!-- Map Section -->
+            <div class="map-section">
+                <h3><i class="fas fa-map"></i> Location</h3>
+                <div class="map-container">
+                    <iframe 
+                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3532.1234567890!2d85.3456789!3d27.1234567!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x39eb1234567890%3A0x1234567890abcdef!2sTexas+International+College!5e0!3m2!1sen!2snp!4v1234567890"
+                        width="100%" 
+                        height="400" 
+                        style="border:0;" 
+                        allowfullscreen="" 
+                        loading="lazy" 
+                        referrerpolicy="no-referrer-when-downgrade">
+                    </iframe>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                            <div class="footer-logo">
+                <img src="images/logotex.png" alt="Texas International College" class="logo">
+                <p>Exclusive futsal booking portal for Texas International College students</p>
+            </div>
+                
+                <div class="footer-links">
+                    <h4>Quick Links</h4>
+                    <a href="#home">Home</a>
+                    <a href="#booking">Book Futsal</a>
+                    <a href="#reviews">Reviews</a>
+                    <a href="#contact">Contact</a>
+                    <a href="https://texasintl.edu.np/" target="_blank">College Website</a>
+                </div>
+                
+                <div class="footer-contact">
+                    <h4>Contact Info</h4>
+                    <p>📧 info@texasintl.edu.np</p>
+                    <p>📞 +977-1-4XXXXXXX</p>
+                    <p>📍 Texas College of Management & IT, Sifal, Kathmandu 44600</p>
+                </div>
+                
+                <div class="footer-social">
+                    <h4>Follow Us</h4>
+                    <div class="social-links">
+                        <a href="https://www.facebook.com/texasintlcollege" target="_blank" title="Facebook"><i class="fab fa-facebook"></i></a>
+                        <a href="https://www.instagram.com/texascollegeofficial/" target="_blank" title="Instagram"><i class="fab fa-instagram"></i></a>
+                        <a href="https://youtube.com/texasintl" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>
+                        <a href="https://linkedin.com/company/texasintl" target="_blank" title="LinkedIn"><i class="fab fa-linkedin"></i></a>
+                        <a href="https://twitter.com/texasintl" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2024 Texas International College Futsal. All rights reserved.</p>
+                <p>Developed By: Envision Tech Pvt. Ltd.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Local Database System -->
+    <script>
+        // Local Database Configuration
+        console.log("💾 Local database system ready!");
+        
+        // BULLETPROOF MODAL FUNCTIONS - ALWAYS AVAILABLE
+        function openLoginModal() {
+            console.log('🔓 Opening login modal...');
+            try {
+                const modal = document.getElementById('loginModal');
+                if (modal) {
+                    modal.style.display = 'block';
+                    console.log('✅ Login modal opened successfully');
+                    return true;
+                } else {
+                    console.error('❌ Login modal not found');
+                    alert('Login modal not found. Please refresh the page.');
+                    return false;
+                }
+            } catch (error) {
+                console.error('❌ Error opening login modal:', error);
+                alert('Error opening login modal. Please refresh the page.');
+                return false;
+            }
+        }
+        
+        function openAdminModal() {
+            console.log('🔐 Opening admin modal...');
+            try {
+                const modal = document.getElementById('adminModal');
+                if (modal) {
+                    modal.style.display = 'block';
+                    console.log('✅ Admin modal opened successfully');
+                    return true;
+                } else {
+                    console.error('❌ Admin modal not found');
+                    alert('Admin modal not found. Please refresh the page.');
+                    return false;
+                }
+            } catch (error) {
+                console.error('❌ Error opening admin modal:', error);
+                alert('Error opening admin modal. Please refresh the page.');
+                return false;
+            }
+        }
+        
+        function closeLoginModal() {
+            console.log('🔒 Closing login modal...');
+            const modal = document.getElementById('loginModal');
+            const form = document.getElementById('loginForm');
+            if (modal) {
+                modal.style.display = 'none';
+                if (form) form.reset();
+                console.log('✅ Login modal closed');
+            } else {
+                console.error('❌ Login modal not found');
+            }
+        }
+        
+        function closeAdminModal() {
+            console.log('🔒 Closing admin modal...');
+            const modal = document.getElementById('adminModal');
+            const form = document.getElementById('adminForm');
+            if (modal) {
+                modal.style.display = 'none';
+                if (form) form.reset();
+                console.log('✅ Admin modal closed');
+            } else {
+                console.error('❌ Admin modal not found');
+            }
+        }
+        
+        // Make functions globally available
+        window.openLoginModal = openLoginModal;
+        window.openAdminModal = openAdminModal;
+        window.closeLoginModal = closeLoginModal;
+        window.closeAdminModal = closeAdminModal;
+        
+        console.log('✅ Modal functions loaded and available globally');
+    </script>
+    
+
+    
+
+    
+    <!-- Application Scripts -->
+    <script src="database.js"></script>
+    <script src="script.js"></script>
+</body>
+</html> 

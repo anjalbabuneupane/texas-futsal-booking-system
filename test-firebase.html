@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Connection Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+    </style>
+</head>
+<body>
+    <h1>🔥 Firebase Connection Test</h1>
+    <div id="status"></div>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+    
+    <script>
+        const statusDiv = document.getElementById('status');
+        
+        function addStatus(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.textContent = message;
+            statusDiv.appendChild(div);
+        }
+        
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBnnZgj-oP4V0MA88p4c_q6b9uGtkdxJmA",
+            authDomain: "texas-futsal-booking.firebaseapp.com",
+            projectId: "texas-futsal-booking",
+            storageBucket: "texas-futsal-booking.appspot.com",
+            messagingSenderId: "1048971899774",
+            appId: "1:1048971899774:web:adee5411e4102ee364392f",
+            measurementId: "G-7X5M15GXTT"
+        };
+        
+        addStatus('🚀 Starting Firebase connection test...', 'info');
+        
+        try {
+            // Initialize Firebase
+            firebase.initializeApp(firebaseConfig);
+            addStatus('✅ Firebase initialized successfully', 'success');
+            
+            // Test Firestore
+            const db = firebase.firestore();
+            addStatus('✅ Firestore initialized', 'success');
+            
+            // Test database connection
+            db.collection('students').limit(1).get()
+                .then(snapshot => {
+                    addStatus('✅ Database connection successful', 'success');
+                    addStatus(`📊 Found ${snapshot.size} documents in students collection`, 'info');
+                })
+                .catch(error => {
+                    addStatus(`❌ Database connection failed: ${error.message}`, 'error');
+                });
+                
+        } catch (error) {
+            addStatus(`❌ Firebase initialization failed: ${error.message}`, 'error');
+        }
+        
+        addStatus('📅 Test completed at: ' + new Date().toISOString(), 'info');
+    </script>
+</body>
+</html> 

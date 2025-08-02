@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Admin Login Test</h1>
+        
+        <div class="form-group">
+            <label for="username">Username:</label>
+            <input type="text" id="username" value="texas" placeholder="Enter username">
+        </div>
+        
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" value="@@Texas@@123#" placeholder="Enter password">
+        </div>
+        
+        <button onclick="testLogin()">Test Login</button>
+        <button onclick="resetCredentials()">Reset Credentials</button>
+        <button onclick="checkDatabase()">Check Database</button>
+        <button onclick="clearAll()">Clear All Data</button>
+        
+        <div id="result" class="result info">
+            Click a button to test admin login functionality...
+        </div>
+    </div>
+
+    <script src="database.js"></script>
+    <script>
+        function showResult(message, type = 'info') {
+            const result = document.getElementById('result');
+            result.textContent = message;
+            result.className = `result ${type}`;
+        }
+
+        function testLogin() {
+            try {
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+                
+                showResult(`Testing login with:\nUsername: ${username}\nPassword: ${password}\n\nChecking database...`, 'info');
+                
+                // Initialize database
+                db.initializeDatabase();
+                
+                // Test validation
+                const isValid = db.validateAdmin(username, password);
+                
+                if (isValid) {
+                    showResult(`✅ LOGIN SUCCESSFUL!\n\nUsername: ${username}\nPassword: ${password}\n\nYou can now use these credentials in the main application.`, 'success');
+                } else {
+                    showResult(`❌ LOGIN FAILED!\n\nUsername: ${username}\nPassword: ${password}\n\nTrying to reset credentials...`, 'error');
+                    
+                    // Try to reset credentials
+                    setTimeout(() => {
+                        resetCredentials();
+                    }, 2000);
+                }
+            } catch (error) {
+                showResult(`❌ ERROR: ${error.message}\n\nStack: ${error.stack}`, 'error');
+            }
+        }
+
+        function resetCredentials() {
+            try {
+                showResult('Resetting admin credentials...', 'info');
+                
+                // Clear old admin data
+                localStorage.removeItem('futsal_admins');
+                
+                // Create new admin credentials
+                const admins = {
+                    'texas': {
+                        username: 'texas',
+                        password: '@@Texas@@123#',
+                        role: 'super_admin'
+                    }
+                };
+                
+                // Store with encryption
+                const encrypted = db.encrypt(admins);
+                localStorage.setItem('futsal_admins', encrypted);
+                
+                showResult(`✅ CREDENTIALS RESET SUCCESSFUL!\n\nUsername: texas\nPassword: @@Texas@@123#\n\nNow try the login test again.`, 'success');
+                
+            } catch (error) {
+                showResult(`❌ ERROR RESETTING CREDENTIALS: ${error.message}`, 'error');
+            }
+        }
+
+        function checkDatabase() {
+            try {
+                showResult('Checking database status...', 'info');
+                
+                // Initialize database
+                db.initializeDatabase();
+                
+                // Check if admins exist
+                const admins = db.secureGetItem('futsal_admins');
+                
+                let result = 'DATABASE STATUS:\n\n';
+                
+                if (admins) {
+                    result += `✅ Admin data found\n`;
+                    result += `Admin count: ${Object.keys(admins).length}\n`;
+                    result += `Admin keys: ${Object.keys(admins).join(', ')}\n\n`;
+                    
+                    if (admins.texas) {
+                        result += `✅ Texas admin found\n`;
+                        result += `Username: ${admins.texas.username}\n`;
+                        result += `Password: ${admins.texas.password}\n`;
+                        result += `Role: ${admins.texas.role}\n`;
+                    } else {
+                        result += `❌ Texas admin not found\n`;
+                    }
+                } else {
+                    result += `❌ No admin data found\n`;
+                }
+                
+                // Check encryption
+                const testData = { test: 'data' };
+                const encrypted = db.encrypt(testData);
+                const decrypted = db.decrypt(encrypted);
+                
+                result += `\nENCRYPTION TEST:\n`;
+                result += `Original: ${JSON.stringify(testData)}\n`;
+                result += `Encrypted: ${encrypted.substring(0, 50)}...\n`;
+                result += `Decrypted: ${JSON.stringify(decrypted)}\n`;
+                result += `Encryption working: ${JSON.stringify(testData) === JSON.stringify(decrypted) ? '✅' : '❌'}\n`;
+                
+                showResult(result, 'info');
+                
+            } catch (error) {
+                showResult(`❌ DATABASE ERROR: ${error.message}\n\nStack: ${error.stack}`, 'error');
+            }
+        }
+
+        function clearAll() {
+            try {
+                showResult('Clearing all data...', 'info');
+                
+                // Clear all localStorage data
+                localStorage.clear();
+                
+                showResult(`✅ ALL DATA CLEARED!\n\nlocalStorage has been completely cleared.\nYou can now reset credentials and test again.`, 'success');
+                
+            } catch (error) {
+                showResult(`❌ ERROR CLEARING DATA: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-initialize when page loads
+        window.onload = function() {
+            showResult('Page loaded. Database initialized.\n\nClick "Check Database" to see current status.', 'info');
+            db.initializeDatabase();
+        };
+    </script>
+</body>
+</html> 
