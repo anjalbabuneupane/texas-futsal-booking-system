@@ -2412,4 +2412,21 @@ function deleteBooking(bookingId) {
     }
 }
 
+// Firebase integration
+let firebaseDB = null;
+
+// Initialize Firebase when module is loaded
+async function initializeFirebase() {
+    try {
+        const { initializeFirebaseData } = await import('./firebase-database.js');
+        await initializeFirebaseData();
+        console.log('🔥 Firebase initialized successfully');
+    } catch (error) {
+        console.error('❌ Error initializing Firebase:', error);
+    }
+}
+
+// Initialize Firebase
+initializeFirebase();
+
  
